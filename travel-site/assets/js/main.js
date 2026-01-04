@@ -1,48 +1,145 @@
 (function () {
-  const burger = document.querySelector('[data-burger]');
-  const drawer = document.querySelector('[data-drawer]');
+  'use strict';
 
-  const closeDrawer = () => {
-    if (!drawer) return;
-    drawer.classList.remove('open');
-    if (burger) burger.setAttribute('aria-expanded', 'false');
-  };
+  // Simple, direct mobile menu toggle
+  function setupMobileMenu() {
+    const burger = document.querySelector('[data-burger]');
+    const drawer = document.querySelector('[data-drawer]');
 
-  if (burger && drawer) {
-    burger.addEventListener('click', (e) => {
-      e.preventDefault();
-      const isOpen = drawer.classList.toggle('open');
-      burger.setAttribute('aria-expanded', String(isOpen));
+    if (!burger || !drawer) {
+      console.error('Mobile menu elements not found:', { burger, drawer });
+      return false;
+    }
+
+    console.log('Mobile menu initialized', { burger, drawer });
+
+    // Mark as initialized
+    burger.setAttribute('data-menu-initialized', 'true');
+
+    function restoreScroll() {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (window.menuScrollY !== undefined) {
+        window.scrollTo(0, window.menuScrollY);
+        window.menuScrollY = undefined;
+      }
+    }
+
+    // Simple toggle function
+    function toggleMenu(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       
-      // Ensure proper focus management
+      const isOpen = drawer.classList.contains('open');
+      
       if (isOpen) {
-        drawer.focus();
-        // Add keyboard support for closing menu with Escape key
-        const handleEsc = (event) => {
-          if (event.key === 'Escape') {
-            closeDrawer();
-            burger.focus();
-          }
-        };
-        document.addEventListener('keydown', handleEsc, { once: true });
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    }
+
+    function openMenu() {
+      // Prevent page scroll but allow drawer to scroll
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      
+      // Store scroll position for restoration
+      window.menuScrollY = scrollY;
+      
+      // Open drawer with animation
+      drawer.classList.add('open');
+      burger.setAttribute('aria-expanded', 'true');
+      
+      // Ensure drawer can scroll
+      drawer.style.overflowY = 'auto';
+      drawer.style.overflowX = 'hidden';
+      
+      console.log('Menu opened');
+    }
+
+    function closeMenu() {
+      drawer.classList.remove('open');
+      burger.setAttribute('aria-expanded', 'false');
+      restoreScroll();
+      console.log('Menu closed');
+    }
+
+    // Use onclick for maximum compatibility
+    burger.onclick = toggleMenu;
+
+    // Close menu when clicking close button
+    const closeButton = drawer.querySelector('[data-drawer-close]');
+    if (closeButton) {
+      closeButton.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeMenu();
+      };
+    }
+
+    // Close menu when clicking links
+    drawer.querySelectorAll('a').forEach(function(link) {
+      link.onclick = function() {
+        // Small delay for better UX
+        setTimeout(function() {
+          closeMenu();
+        }, 100);
+      };
+    });
+
+    // Close menu with Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && drawer.classList.contains('open')) {
+        closeMenu();
+        burger.focus();
       }
     });
 
-    // Close menu when user taps a link (mobile UX)
-    drawer.querySelectorAll('a').forEach(a => {
-      a.addEventListener('click', (e) => {
-        // Only close if it's a navigation link (not a button)
-        if (a.tagName === 'A' && !a.classList.contains('btn')) {
-          closeDrawer();
+    // Close menu when resizing to desktop
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() {
+        if (window.innerWidth >= 980 && drawer.classList.contains('open')) {
+          closeMenu();
         }
-      });
+      }, 150);
     });
 
-    // If user rotates or resizes to desktop, close the drawer
-    window.addEventListener('resize', () => {
-      if (window.innerWidth >= 980) closeDrawer();
+    // Close menu when clicking on drawer background (not on links)
+    drawer.addEventListener('click', function(e) {
+      if (e.target === drawer || (e.target.classList.contains('mobile-drawer') && !e.target.closest('.nav'))) {
+        closeMenu();
+      }
     });
+
+    return true;
   }
+
+  // Initialize immediately (script has defer, so DOM is ready)
+  setupMobileMenu();
+  
+  // Also try on DOMContentLoaded as backup
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupMobileMenu);
+  }
+  
+  // Final fallback: try again after a short delay
+  setTimeout(function() {
+    const burger = document.querySelector('[data-burger]');
+    if (burger && !burger.hasAttribute('data-menu-initialized')) {
+      burger.setAttribute('data-menu-initialized', 'true');
+      setupMobileMenu();
+    }
+  }, 100);
 
   // Set aria-current for active nav link
   const path = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
@@ -110,7 +207,7 @@ ${message}
 
       window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
 
-      if (status) status.textContent = 'Opening your email app… If it doesn’t open, please WhatsApp or call us.';
+      if (status) status.textContent = 'Opening your email app. If it doesn\'t open, please WhatsApp or call us.';
       form.reset();
     });
   }
