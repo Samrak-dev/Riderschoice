@@ -526,6 +526,34 @@ hr.sep{
 .kpi strong{display:block; color: var(--teal); font-size:1.05rem}
 .kpi span{color: var(--muted); font-size:.9rem}
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.brand-logo {
+  height: 42px;          /* perfect navbar size */
+  width: auto;
+  object-fit: contain;
+}
+
+@media (max-width: 768px) {
+  .brand-logo {
+    height: 36px;
+  }
+}
+
+.brand-name strong {
+  font-size: 1.05rem;
+  letter-spacing: .3px;
+}
+
+.brand-name span {
+  font-size: .75rem;
+  opacity: .85;
+}
+
 /* Feature cards */
 .icon{
   width:40px; height:40px;
