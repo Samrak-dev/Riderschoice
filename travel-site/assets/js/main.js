@@ -211,4 +211,19 @@ ${message}
       form.reset();
     });
   }
+  
+  // Toggle functionality for hidden links
+  document.querySelectorAll('.toggle-button').forEach(button => {
+    button.addEventListener('click', function() {
+      const content = this.nextElementSibling;
+      content.classList.toggle('visible');
+      this.classList.toggle('active');
+      
+      // Update button text
+      const textSpan = this.querySelector('.toggle-text');
+      if(textSpan) {
+        textSpan.textContent = content.classList.contains('visible') ? 'Show Less' : 'More Links';
+      }
+    });
+  });
 })();
